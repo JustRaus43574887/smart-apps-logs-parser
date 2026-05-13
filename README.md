@@ -71,6 +71,192 @@ yarn build
 
 Собранные файлы будут в папке `dist/`
 
+## Развертывание на VPS
+
+### Требования к серверу
+- **OS**: Ubuntu 20.04+ или CentOS 7+
+- **Node.js**: 16+ (опционально, если используется статическое хостирование)
+- **Nginx** или Apache (для проксирования)
+- **Минимум**: 1 GB RAM, 10 GB дискового пространства
+
+### Вариант 1: Статическое хостирование (рекомендуется)
+
+#### Шаг 1: Собрите приложение локально
+На вашем локальном компьютере в папке `apps/web`:
+```bash
+npm run build
+```
+
+#### Шаг 2: Загрузите файлы на VPS
+```bash
+scp -r dist/* user@your_vps_ip:/var/www/log-parser/
+```
+
+#### Шаг 3: Настройте Nginx
+
+Создайте конфиг-файл `/etc/nginx/sites-available/log-parser`:
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;  # Замените на ваш домен
+
+    root /var/www/log-parser;
+    index index.html;
+
+    # Обслуживание статических файлов
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Перенаправление на index.html для SPA
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Сжатие ответов
+    gzip on;
+    gzip_types text/plain text/css text/javascript application/json application/javascript image/svg+xml;
+}
+```
+
+#### Шаг 4: Включите конфиг и перезагрузите Nginx
+```bash
+sudo ln -s /etc/nginx/sites-available/log-parser /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+#### Шаг 5: Настройте SSL (Let's Encrypt)
+```bash
+sudo apt-get install certbot python3-certbot-nginx
+sudo certbot --nginx -d your-domain.com
+```
+
+### Вариант 2: Развертывание с Node.js сервером
+
+Если вам нужен Node.js для дополнительного функционала:
+
+#### Шаг 1: Установите Node.js на VPS
+```bash
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+#### Шаг 2: Клонируйте репозиторий на VPS
+```bash
+cd /var/www
+git clone https://github.com/your-username/express-log-parser.git
+cd express-log-parser
+```
+
+#### Шаг 3: Установите зависимости и соберите приложение
+```bash
+npm install
+cd apps/web
+npm install
+npm run build
+cd /var/www/express-log-parser
+```
+
+#### Шаг 4: Установите PM2 для управления приложением
+```bash
+sudo npm install -g pm2
+pm2 start "npm run preview --prefix apps/web" --name "log-parser"
+pm2 startup
+pm2 save
+```
+
+#### Шаг 5: Настройте Nginx как reverse proxy
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:4173;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### Вариант 3: Docker развертывание
+
+Создайте `Dockerfile` в корне проекта:
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install
+RUN cd apps/web && npm install && npm run build
+
+EXPOSE 4173
+
+CMD ["npm", "run", "preview", "--prefix", "apps/web"]
+```
+
+Постройте образ:
+```bash
+docker build -t log-parser .
+```
+
+Запустите контейнер:
+```bash
+docker run -p 80:4173 log-parser
+```
+
+### Обновление приложения
+
+Чтобы обновить приложение на VPS:
+
+```bash
+# Локально
+npm run build
+scp -r dist/* user@your_vps_ip:/var/www/log-parser/
+
+# На VPS
+sudo systemctl restart nginx
+```
+
+### Мониторинг и логи
+
+Для просмотра логов Nginx:
+```bash
+sudo tail -f /var/log/nginx/error.log
+```
+
+Для PM2:
+```bash
+pm2 logs log-parser
+pm2 monit
+```
+
+### Обеспечение безопасности
+
+1. **Брандмауэр**: Открыть порты 80 и 443
+```bash
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+2. **Регулярные обновления**:
+```bash
+sudo apt-get update
+sudo apt-get upgrade
+```
+
+3. **Резервные копии**: Регулярно создавайте резервные копии папки `/var/www/log-parser`
+
 ## Формат JSONL
 
 Файл должен содержать одну валидную JSON-запись на строку:
