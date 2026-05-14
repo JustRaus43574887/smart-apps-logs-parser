@@ -10,8 +10,8 @@ export enum LOG_TYPE {
   DEVICE_INFO = "device_info",
   REST_EVENT = "rest_event",
   WEBSOCKET_EVENT = "websocket_event",
-  BROWSER_LOG = "browser_log",
   SMARTAPP_EVENT = "smartapp_event",
+  BROWSER_LOG = "browser_log",
   CLIENT_LOG = "client_log",
   CLIENT_STATE = "client_state",
 }
