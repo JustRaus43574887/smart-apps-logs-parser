@@ -1,3 +1,11 @@
+export enum COLORS {
+  RED = "red",
+  YELLOW = "yellow",
+  BLUE = "#1890ff",
+  DARK = "#1f1f1f",
+  LIGHT = '#f5f5f5'
+}
+
 export enum LOG_TYPE {
   DEVICE_INFO = "device_info",
   REST_EVENT = "rest_event",
@@ -7,7 +15,6 @@ export enum LOG_TYPE {
   CLIENT_LOG = "client_log",
   CLIENT_STATE = "client_state",
 }
-
 
 export enum LOG_STATUS {
   SUCCESS = "success",
@@ -24,15 +31,6 @@ export interface LogEntry<T = unknown> {
 }
 
 export interface JsonParserEntry extends LogEntry {
-  id: string
+  id: string;
   textColor: COLORS;
-}
-
-export enum COLORS {
-  RED = "red",
-  YELLOW = "yellow",
-  GREEN = "green",
-  BLUE = "#1890ff",
-  LIGHT_GRAY = "#A5A5A5",
-  DARK_GRAY = "#1f1f1f",
 }

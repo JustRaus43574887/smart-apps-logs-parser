@@ -33,19 +33,17 @@ export class JSONLinesParser {
   }
 
   private static getTextColor(data: LogEntry): COLORS {
-
     if ([LOG_TYPE.DEVICE_INFO, LOG_TYPE.CLIENT_STATE].includes(data.type)) {
-      return COLORS.LIGHT_GRAY;
+      return COLORS.BLUE;
     }
 
     switch (data.status as LOG_STATUS) {
-      case LOG_STATUS.SUCCESS:
-        return COLORS.GREEN;
       case LOG_STATUS.ERROR:
         return COLORS.RED;
+      case LOG_STATUS.SUCCESS:
       case LOG_STATUS.INFO:
       default:
-        return COLORS.BLUE;
+        return COLORS.DARK;
     }
   }
 
@@ -85,8 +83,8 @@ export class JSONLinesParser {
     }
 
     return {
-      id:  `id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      timestamp: new Date(parseInt(data.timestamp, 10)).toISOString(),
+      id: `id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      timestamp: data.timestamp,
       type: data.type as LOG_TYPE,
       message: data.message,
       payload: data.payload as Record<string, unknown>,

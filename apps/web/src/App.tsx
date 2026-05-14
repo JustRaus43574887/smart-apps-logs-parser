@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Card,
+  Descriptions,
   Empty,
   Input,
   Space,
@@ -16,6 +17,8 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
+  CheckCircleTwoTone,
+  CloseCircleTwoTone,
   CloseOutlined,
   DownOutlined,
   UpOutlined,
@@ -25,7 +28,7 @@ import {
   COLORS,
   JsonParserEntry,
   LOG_TYPE,
-  LogEntry,
+  LOG_STATUS,
 } from "../../../shared/types";
 import { JSONLinesParser } from "../../../shared/jsonl-parser";
 
@@ -157,10 +160,7 @@ const renderHighlightedJson = (jsonString: string) => {
 
     if (isKey) {
       return (
-        <span
-          key={index}
-          style={{ fontWeight: "bold", color: COLORS.DARK_GRAY }}
-        >
+        <span key={index} style={{ fontWeight: "bold", color: COLORS.DARK }}>
           {part}
         </span>
       );
@@ -197,21 +197,106 @@ const getRestEventTabs = (
       key: "general",
       label: "general",
       children: (
-        <pre className="jsonViewer">
-          {renderHighlightedJson(
-            processJsonString(
-              JSON.stringify(payload, null, 2),
-              searchText,
-              isStrictSearch,
-            ),
-          )}
-        </pre>
+        <Descriptions
+          column={1}
+          size="small"
+          items={[
+            {
+              key: "url",
+              label: "URL",
+              children: payload.url || "-",
+            },
+            {
+              key: "method",
+              label: "Method",
+              children: payload.method || "-",
+            },
+            {
+              key: "status_code",
+              label: "Status Code",
+              children: payload.status_code || "0",
+            },
+            {
+              key: "error_text",
+              label: "Error Text",
+              children: payload.error_text || "-",
+            },
+          ]}
+        />
       ),
     },
   ];
 
+  // Headers tab (second tab)
+  const requestHeaders =
+    payload.request &&
+    typeof payload.request === "object" &&
+    "headers" in payload.request
+      ? (payload.request as Record<string, unknown>).headers
+      : null;
+
+  const responseHeaders =
+    payload.response &&
+    typeof payload.response === "object" &&
+    "headers" in payload.response
+      ? (payload.response as Record<string, unknown>).headers
+      : null;
+
+  if (requestHeaders || responseHeaders) {
+    items.push({
+      key: "headers",
+      label: "headers",
+      children: (
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          {requestHeaders && (
+            <div>
+              <h4 style={{ margin: "0 0 12px 0", fontWeight: 600 }}>
+                Request Headers
+              </h4>
+              <Descriptions
+                column={2}
+                size="small"
+                items={
+                  typeof requestHeaders === "object" && requestHeaders !== null
+                    ? Object.entries(requestHeaders).map(([key, value]) => ({
+                        key,
+                        label: key,
+                        children: String(value || "-"),
+                      }))
+                    : []
+                }
+              />
+            </div>
+          )}
+          {responseHeaders && (
+            <div>
+              <h4 style={{ margin: "0 0 12px 0", fontWeight: 600 }}>
+                Response Headers
+              </h4>
+              <Descriptions
+                column={2}
+                size="small"
+                items={
+                  typeof responseHeaders === "object" &&
+                  responseHeaders !== null
+                    ? Object.entries(responseHeaders).map(([key, value]) => ({
+                        key,
+                        label: key,
+                        children: String(value || "-"),
+                      }))
+                    : []
+                }
+              />
+            </div>
+          )}
+        </div>
+      ),
+    });
+  }
+
   // Request tab
   if (payload.request) {
+    const requestBody = (payload.request as Record<string, unknown>).body;
     items.push({
       key: "request",
       label: "request",
@@ -219,7 +304,7 @@ const getRestEventTabs = (
         <pre className="jsonViewer">
           {renderHighlightedJson(
             processJsonString(
-              JSON.stringify(payload.request, null, 2),
+              JSON.stringify(requestBody || {}, null, 2),
               searchText,
               isStrictSearch,
             ),
@@ -231,6 +316,7 @@ const getRestEventTabs = (
 
   // Response tab
   if (payload.response) {
+    const responseBody = (payload.response as Record<string, unknown>).body;
     items.push({
       key: "response",
       label: "response",
@@ -238,46 +324,7 @@ const getRestEventTabs = (
         <pre className="jsonViewer">
           {renderHighlightedJson(
             processJsonString(
-              JSON.stringify(payload.response, null, 2),
-              searchText,
-              isStrictSearch,
-            ),
-          )}
-        </pre>
-      ),
-    });
-  }
-
-  // Headers tab
-  const headersObj: Record<string, unknown> = {};
-  if (
-    payload.request &&
-    typeof payload.request === "object" &&
-    "headers" in payload.request
-  ) {
-    headersObj["request_headers"] = (
-      payload.request as Record<string, unknown>
-    ).headers;
-  }
-  if (
-    payload.response &&
-    typeof payload.response === "object" &&
-    "headers" in payload.response
-  ) {
-    headersObj["response_headers"] = (
-      payload.response as Record<string, unknown>
-    ).headers;
-  }
-
-  if (Object.keys(headersObj).length > 0) {
-    items.push({
-      key: "headers",
-      label: "headers",
-      children: (
-        <pre className="jsonViewer">
-          {renderHighlightedJson(
-            processJsonString(
-              JSON.stringify(headersObj, null, 2),
+              JSON.stringify(responseBody || {}, null, 2),
               searchText,
               isStrictSearch,
             ),
@@ -362,7 +409,19 @@ const App = () => {
       ),
     },
     {
-      title: "message",
+      title: (
+        <Flex justify="space-between" align="center">
+          <span>Message</span>
+          <Button
+            onClick={() => setIsAllRowsExpanded(!isAllRowsExpanded)}
+            shape="round"
+            color="primary"
+            size="small"
+            icon={isAllRowsExpanded ? <UpOutlined /> : <DownOutlined />}
+          />
+        </Flex>
+      ),
+
       dataIndex: "message",
       key: "message",
       ellipsis: true,
@@ -392,17 +451,34 @@ const App = () => {
     <div className="page">
       {!allEntries.length ? (
         <Card className="card" variant="borderless">
-          <Space direction="vertical" size={16} style={{ width: "100%" }}>
+          <label
+            htmlFor="upload"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "16px",
+              padding: "40px 0",
+            }}
+          >
+            <Empty />
             <Upload
               beforeUpload={handleUpload}
               showUploadList={false}
               accept=".jsonl,.json,.txt"
+              id="upload"
             >
-              <Button icon={<UploadOutlined />}>Загрузить лог-файл</Button>
+              <Button
+                type="primary"
+                variant="filled"
+                size="large"
+                icon={<UploadOutlined />}
+              >
+                Загрузите JSON Lines файл
+              </Button>
             </Upload>
-            {error ? <Alert type="error" message={error} showIcon /> : null}
-            <Empty />
-          </Space>
+          </label>
+          {error ? <Alert type="error" message={error} showIcon /> : null}
         </Card>
       ) : (
         <Card className="card">
@@ -413,12 +489,22 @@ const App = () => {
                 showUploadList={false}
                 accept=".jsonl,.json,.txt"
               >
-                <Button icon={<UploadOutlined />}>Загрузить лог-файл</Button>
+                <Button
+                  type="primary"
+                  variant="filled"
+                  size="large"
+                  icon={<UploadOutlined />}
+                >
+                  Загрузите JSON Lines файл
+                </Button>
               </Upload>
               {error ? <Alert type="error" message={error} showIcon /> : null}
               <Input
-                allowClear
+                allowClear={{
+                  clearIcon: <CloseOutlined style={{ fontSize: "16px" }} />,
+                }}
                 size="large"
+                variant="filled"
                 placeholder="Введите поисковый запрос"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
@@ -437,29 +523,22 @@ const App = () => {
                     key={index}
                     checked={active}
                     onChange={() => toggleType(entry.value)}
+                    icon={
+                      active ? (
+                        <CheckCircleTwoTone twoToneColor={COLORS.BLUE} />
+                      ) : (
+                        <CloseCircleTwoTone twoToneColor={COLORS.BLUE} />
+                      )
+                    }
                     className="filterTag"
                   >
                     {entry.label}
-                    <CloseOutlined style={{ marginLeft: "4px" }} />
                   </Tag.CheckableTag>
                 );
               })}
               <Button onClick={() => setSelectedTypes(new Set())} danger>
                 Сбросить фильтры
               </Button>
-              <Flex
-                onClick={() => setIsAllRowsExpanded(!isAllRowsExpanded)}
-                align="center"
-                gap={8}
-              >
-                <Button
-                  shape="round"
-                  color="primary"
-                  size="small"
-                  icon={isAllRowsExpanded ? <UpOutlined /> : <DownOutlined />}
-                />
-                {isAllRowsExpanded ? "Свернуть все" : "Развернуть все"}
-              </Flex>
             </Flex>
             <Flex vertical style={{ overflow: "hidden" }} flex={1}>
               {allEntries.length === 0 && !error ? (
@@ -474,7 +553,7 @@ const App = () => {
                   }}
                 >
                   <Table<JsonParserEntry>
-                    rowKey={record => `${record.timestamp}-${record.id}`}
+                    rowKey={(record) => `${record.timestamp}-${record.id}`}
                     columns={columns}
                     dataSource={filteredEntries}
                     size="small"
@@ -508,6 +587,66 @@ const App = () => {
                             isStrictSearch,
                           );
                           return <Tabs size="small" items={items} />;
+                        }
+
+                        // Special handling for client_log and browser_log
+                        if (
+                          record.type === "client_log" ||
+                          record.type === "browser_log"
+                        ) {
+                          // Determine level from payload.level or fallback to status
+                          const level =
+                            (record.payload?.level as string) || record.status;
+                          const levelLower = level.toLowerCase();
+                          let levelColor = COLORS.DARK;
+                          if (
+                            levelLower.includes("error") ||
+                            levelLower === "error" ||
+                            level === LOG_STATUS.ERROR
+                          ) {
+                            levelColor = COLORS.RED;
+                          } else if (
+                            levelLower.includes("success") ||
+                            level === LOG_STATUS.SUCCESS
+                          ) {
+                            levelColor = COLORS.DARK;
+                          } else if (levelLower.includes("info")) {
+                            levelColor = COLORS.BLUE;
+                          }
+
+                          return (
+                            <div
+                              style={{
+                                position: "relative",
+                                whiteSpace: "pre-wrap",
+                                overflow: "auto",
+                                fontFamily: "monospace",
+                                fontSize: "12px",
+                                backgroundColor: COLORS.LIGHT,
+                                padding: "12px",
+                                paddingRight: "80px",
+                                borderRadius: "4px",
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              <Tag
+                                style={{
+                                  position: "absolute",
+                                  top: "12px",
+                                  right: "12px",
+                                  margin: 0,
+                                }}
+                                color={levelColor}
+                              >
+                                {level}
+                              </Tag>
+                              {highlightText(
+                                record.payload.text as string,
+                                searchText,
+                                isStrictSearch,
+                              )}
+                            </div>
+                          );
                         }
 
                         // Default payload rendering for other types
