@@ -24,6 +24,7 @@ export interface LogEntry<T = unknown> {
 }
 
 export interface JsonParserEntry extends LogEntry {
+  id: string
   textColor: COLORS;
 }
 

@@ -474,7 +474,7 @@ const App = () => {
                   }}
                 >
                   <Table<JsonParserEntry>
-                    rowKey={(record, _) => `${record.timestamp}-${record.type}`}
+                    rowKey={record => `${record.timestamp}-${record.id}`}
                     columns={columns}
                     dataSource={filteredEntries}
                     size="small"
@@ -483,7 +483,7 @@ const App = () => {
                       expandRowByClick: true,
                       onExpand: (expanded, record) => {
                         setExpandedRowKeys((prev) => {
-                          const key = `${record.timestamp}-${record.type}`;
+                          const key = `${record.timestamp}-${record.id}`;
                           return expanded
                             ? [...prev, key]
                             : prev.filter((k) => k !== key);
@@ -491,14 +491,14 @@ const App = () => {
                       },
                       expandedRowKeys: isAllRowsExpanded
                         ? filteredEntries.map(
-                            (entry) => `${entry.timestamp}-${entry.type}`,
+                            (entry) => `${entry.timestamp}-${entry.id}}`,
                           )
                         : filteredEntries
                             .filter((entry) => {
-                              const key = `${entry.timestamp}-${entry.type}`;
+                              const key = `${entry.timestamp}-${entry.id}`;
                               return expandedRowKeys.includes(key);
                             })
-                            .map((entry) => `${entry.timestamp}-${entry.type}`),
+                            .map((entry) => `${entry.timestamp}-${entry.id}`),
                       expandedRowRender: (record) => {
                         // Special handling for rest_event
                         if (record.type === "rest_event" && record.payload) {

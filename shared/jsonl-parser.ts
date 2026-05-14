@@ -85,6 +85,7 @@ export class JSONLinesParser {
     }
 
     return {
+      id:  `id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       timestamp: new Date(parseInt(data.timestamp, 10)).toISOString(),
       type: data.type as LOG_TYPE,
       message: data.message,
