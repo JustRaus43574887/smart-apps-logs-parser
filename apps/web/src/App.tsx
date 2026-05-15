@@ -32,8 +32,8 @@ import {
   JsonParserEntry,
   LOG_TYPE,
   LOG_STATUS,
-} from "../../../shared/types";
-import { JSONLinesParser } from "../../../shared/jsonl-parser";
+} from "../../../common/types";
+import { JSONLinesParser } from "../../../common/jsonParser";
 import { CollapseProps } from "antd/lib";
 
 export const toTitleCase = (text: string) => {
