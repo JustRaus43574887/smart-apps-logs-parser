@@ -687,7 +687,11 @@ const App = () => {
                     },
                     expandedRowKeys,
                     expandedRowRender: (record) => {
-                      if (record.type === "rest_event" && record.payload) {
+                      if (
+                        record.type === LOG_TYPE.CLIENT_REST_EVENT ||
+                        (record.type === LOG_TYPE.APP_REST_EVENT &&
+                          record.payload)
+                      ) {
                         return (
                           <RestEventTabs
                             payload={record.payload as Record<string, unknown>}
