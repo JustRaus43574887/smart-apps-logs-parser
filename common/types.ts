@@ -8,7 +8,6 @@ export enum COLORS {
 
 export enum LOG_TYPE {
   DEVICE_INFO = "device_info",
-  REST_EVENT = "rest_event",
   CLIENT_REST_EVENT = 'client_rest_event',
   APP_REST_EVENT = 'app_rest_event',
   WEBSOCKET_EVENT = "websocket_event",
